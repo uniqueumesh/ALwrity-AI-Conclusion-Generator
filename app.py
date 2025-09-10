@@ -15,6 +15,7 @@ def main():
     st.markdown(
         """
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
         ::-webkit-scrollbar-track { background: #e1ebf9; }
         ::-webkit-scrollbar-thumb {
             background-color: #90CAF9; border-radius: 10px; border: 3px solid #e1ebf9;
@@ -28,7 +29,7 @@ def main():
             font-weight: bold;
         }
         .al-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06); }
-        .al-card-text { color: #0F172A; line-height: 1.55; max-height: 120px; overflow: auto; }
+        .al-card-text { color: #0F172A; line-height: 1.65; max-height: 120px; overflow: auto; font-family: 'Roboto', 'Segoe UI', Arial, sans-serif; font-size: 20px; }
         .al-copy-btn { background:#1565C0; color:#FFFFFF; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
         .al-copy-btn:hover { background:#0d47a1; }
         </style>
@@ -137,8 +138,9 @@ def main():
                     safe_html_text = ihtml.escape(plain_text).replace('\n', '<br/>')
                     hidden_text = ihtml.escape(plain_text)
                     card_html = f"""
+<link href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap\" rel=\"stylesheet\"/>
 <div class=\"al-card\">
-  <div class=\"al-card-text\">{safe_html_text}</div>
+  <div class=\"al-card-text\" style=\"font-family:'Roboto','Segoe UI',Arial,sans-serif;font-size:20px;line-height:1.65;color:#0F172A;\">{safe_html_text}</div>
   <div style=\"display:flex; justify-content:flex-end; margin-top:10px;\">
     <button type=\"button\" class=\"al-copy-btn\" id=\"copy_{idx}\">Copy</button>
   </div>
