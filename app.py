@@ -132,36 +132,56 @@ def main():
                 # Parse into list items
                 lines = [t.strip().lstrip('0123456789. ') for t in conclusions.split('\n') if t.strip()]
 
-                # Card grid (two columns) with per-item Copy button
-                cols = st.columns(2)
-                for idx, text in enumerate(lines):
-                    safe_html_text = ihtml.escape(text).replace('\n', '<br/>')
+                # Single column cards with per-item Copy button
+                for idx, plain_text in enumerate(lines):
+                    safe_html_text = ihtml.escape(plain_text).replace('\n', '<br/>')
+                    hidden_text = ihtml.escape(plain_text)
                     card_html = f"""
 <div class=\"al-card\">
   <div class=\"al-card-text\">{safe_html_text}</div>
   <div style=\"display:flex; justify-content:flex-end; margin-top:10px;\">
-    <button class=\"al-copy-btn\" id=\"copy_{idx}\">Copy</button>
+    <button type=\"button\" class=\"al-copy-btn\" id=\"copy_{idx}\">Copy</button>
   </div>
+  <textarea id=\"copy_src_{idx}\" style=\"position:absolute; left:-10000px; top:auto; width:1px; height:1px; opacity:0;\">{hidden_text}</textarea>
 </div>
 <script>
 (function(){{
   const btn = document.getElementById('copy_{idx}');
-  const text = `{safe_html_text.replace('`','\\`')}`.replaceAll('<br/>','\n');
+  const source = document.getElementById('copy_src_{idx}');
+  const text = source ? source.value : '';
   if (btn) {{
     btn.addEventListener('click', async () => {{
+      const original = btn.textContent;
+      const setOk = () => {{ btn.textContent = 'Copied'; setTimeout(() => btn.textContent = original, 1200); }};
+      const setFail = () => {{ btn.textContent = 'Copy'; }};
       try {{
-        await navigator.clipboard.writeText(text);
-        const original = btn.textContent;
-        btn.textContent = 'Copied';
-        setTimeout(() => btn.textContent = original, 1200);
-      }} catch (e) {{}}
+        if (navigator && navigator.clipboard && navigator.clipboard.writeText && text) {{
+          await navigator.clipboard.writeText(text);
+          setOk();
+          return;
+        }}
+      }} catch (e) {{ /* fall through */ }}
+      try {{
+        const ta = source || document.createElement('textarea');
+        if (!source) {{
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          ta.style.pointerEvents = 'none';
+          document.body.appendChild(ta);
+        }}
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        if (!source) document.body.removeChild(ta);
+        if (ok) {{ setOk(); }} else {{ setFail(); }}
+      }} catch (err) {{ setFail(); }}
     }});
   }}
 }})();
 </script>
 """
-                    with cols[idx % 2]:
-                        st_html(card_html, height=170)
+                    st_html(card_html, height=190)
 
                 # Export to Excel for A/B testing
                 df = pd.DataFrame({'Conclusion': lines})
