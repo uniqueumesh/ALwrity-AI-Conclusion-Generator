@@ -1,6 +1,8 @@
 import io
+import html as ihtml
 import pandas as pd
 import streamlit as st
+from streamlit.components.v1 import html as st_html
 
 from src.logic.conclusion import build_conclusion_prompt
 from src.services.gemini_client import gemini_text_response
@@ -25,6 +27,10 @@ def main():
             cursor: pointer; transition: background-color 0.3s ease; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
             font-weight: bold;
         }
+        .al-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06); }
+        .al-card-text { color: #0F172A; line-height: 1.55; max-height: 120px; overflow: auto; }
+        .al-copy-btn { background:#1565C0; color:#FFFFFF; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
+        .al-copy-btn:hover { background:#0d47a1; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -122,10 +128,42 @@ def main():
                     return
 
                 st.session_state['conclusions_raw'] = conclusions
-                st.markdown(conclusions)
+
+                # Parse into list items
+                lines = [t.strip().lstrip('0123456789. ') for t in conclusions.split('\n') if t.strip()]
+
+                # Card grid (two columns) with per-item Copy button
+                cols = st.columns(2)
+                for idx, text in enumerate(lines):
+                    safe_html_text = ihtml.escape(text).replace('\n', '<br/>')
+                    card_html = f"""
+<div class=\"al-card\">
+  <div class=\"al-card-text\">{safe_html_text}</div>
+  <div style=\"display:flex; justify-content:flex-end; margin-top:10px;\">
+    <button class=\"al-copy-btn\" id=\"copy_{idx}\">Copy</button>
+  </div>
+</div>
+<script>
+(function(){{
+  const btn = document.getElementById('copy_{idx}');
+  const text = `{safe_html_text.replace('`','\\`')}`.replaceAll('<br/>','\n');
+  if (btn) {{
+    btn.addEventListener('click', async () => {{
+      try {{
+        await navigator.clipboard.writeText(text);
+        const original = btn.textContent;
+        btn.textContent = 'Copied';
+        setTimeout(() => btn.textContent = original, 1200);
+      }} catch (e) {{}}
+    }});
+  }}
+}})();
+</script>
+"""
+                    with cols[idx % 2]:
+                        st_html(card_html, height=170)
 
                 # Export to Excel for A/B testing
-                lines = [t.strip().lstrip('0123456789. ') for t in conclusions.split('\n') if t.strip()]
                 df = pd.DataFrame({'Conclusion': lines})
                 excel_buffer = io.BytesIO()
                 try:
